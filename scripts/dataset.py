@@ -15,7 +15,8 @@ class hyperspectral_dataset(Dataset):
         
         # Leser inn hyperspektral data fra .bip@
         with open(top_folder_name, 'rb') as f:
-            raw_data = np.fromfile(f, dtype=np.uint16)
+            raw_data = cp.fromfile(f, dtype=cp.uint16)
+            raw_data = cp.asnumpy(raw_data)
         
         # Hardkodede dimensjoner (må sjekkes mot dataene)
         HEIGHT, WIDTH, BANDS = 598, 1092, 120  # Tilpass etter datasettene
@@ -30,19 +31,17 @@ class hyperspectral_dataset(Dataset):
         # Endre labels fra {1, 2, 3} → {0, 1, 2}
         self.labels = self.labels - 1
 
-
-
         # Sjekk om dimensjonene matcher
         if self.labels.shape != (self.image_data.shape[0], self.image_data.shape[1]):
             raise ValueError("Mismatch mellom labels og bildet! Sjekk label-filen.")
         
         # Flat ut bildet slik at hver piksel blir et datapunkt
-        self.image_data = self.image_data.reshape(-1, self.image_data.shape[-1])  # (598*1092, bands)
+        self.image_data = self.image_data.reshape(-1, self.image_data.shape[-1])
+        self.image_data = torch.from_numpy(self.image_data).float().contiguous()
         self.labels = self.labels.flatten()  # (598*1092,)
 
         # Konverter til PyTorch tensors
-        self.image_data = torch.tensor(self.image_data, dtype=torch.float32)
-        self.labels = torch.tensor(self.labels, dtype=torch.long)
+        self.labels = torch.from_numpy(self.labels).long()
 
         print(f"Datasettet inneholder {len(self)} piksler.")
         print(f"Dimensjoner på bildedata: {self.image_data.shape}")

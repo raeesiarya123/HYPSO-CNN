@@ -31,6 +31,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+from torch.cuda.amp import autocast, GradScaler
 
 # HYPSO Package
 import hypso

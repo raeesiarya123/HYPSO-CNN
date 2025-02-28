@@ -15,6 +15,7 @@ class cnn_1d(nn.Module):
                 conv2_filters=64,
                 conv3_filters=128):
         super(cnn_1d, self).__init__()
+        torch.backends.cudnn.benchmark = True
     
         # Lag 1
         # 1) Konvolusjonslag
@@ -50,14 +51,14 @@ class cnn_1d(nn.Module):
         self.fc = nn.Linear(conv3_filters, num_classes)
 
     def forward(self, x):
-        # Lag 1 - Konvolusjon + Batch normalisering + Aktivering (ReLU)
-        x = F.relu(self.bn1(self.conv1(x)))
+        # Lag 1 - Konvolusjon + Batch normalisering + Aktivering (SiLU)
+        x = F.silu(self.bn1(self.conv1(x)))
 
-        # Lag 2 - Konvolusjon + Batch normalisering + Aktivering (ReLU)
-        x = F.relu(self.bn2(self.conv2(x)))
+        # Lag 2 - Konvolusjon + Batch normalisering + Aktivering (SiLu)
+        x = F.silu(self.bn2(self.conv2(x)))
 
-        # Lag 3 - Konvolusjon + Batch normalisering + Aktivering (ReLU)
-        x = F.relu(self.bn3(self.conv3(x)))
+        # Lag 3 - Konvolusjon + Batch normalisering + Aktivering (SiLu)
+        x = F.silu(self.bn3(self.conv3(x)))
 
         # Global Average Pooling
         # Komprimerer data fra (batch, 128, 598) → (batch, 128, 1)

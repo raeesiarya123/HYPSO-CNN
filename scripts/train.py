@@ -19,10 +19,12 @@ print(torch.cuda.is_available())  # Skal være True
 print(torch.cuda.device_count())  # Skal være minst 1
 print(torch.version.cuda)  # Skal matche CUDA 12.7
 print(torch.backends.cudnn.version())  # Skal gi et tall hvis CUDNN er aktiv
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.fastest = True
 
 # Hyperparametere
-EPOCHS = 10
-BATCH_SIZE = 32
+EPOCHS = 75
+BATCH_SIZE = 512
 LEARNING_RATE = 0.001
 
 # Last inn datasettet
@@ -36,10 +38,11 @@ TRAIN_LABEL_PATHS = ["training_data/bluenile/bluenile_2025-01-25T08-23-16Z-l1a_p
 
 train_datasets = [hyperspectral_dataset(data_path, label_path) for data_path, label_path in zip(TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS)]
 train_dataset = torch.utils.data.ConcatDataset(train_datasets)
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=3)
 
 # Modell
 model = cnn_1d(input_dim=120, num_classes=3).to(device)
+model = torch.compile(model)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
@@ -55,10 +58,7 @@ def train_loop(model, train_loader, criterion, optimizer):
         for batch in loop:
             inputs, labels = batch
             inputs, labels = inputs.to(device), labels.to(device)
-            # Fjern unødvendig dimensjon før Conv1D
             inputs = inputs.unsqueeze(1).squeeze(2)
-
-            #inputs = inputs.unsqueeze(1) # Legger til kanal-dimensjon i Conv1D
 
             optimizer.zero_grad()
             output = model(inputs)
@@ -73,8 +73,6 @@ def train_loop(model, train_loader, criterion, optimizer):
         
         accuracy = 100 * correct / total
         print(f"Epoch {epoch+1}/{EPOCHS}, Loss: {total_loss:.4f}, Accuracy: {accuracy:.2f}%")
-
-
 
 print("Starter trening...")
 train_loop(model, train_loader, criterion, optimizer)
