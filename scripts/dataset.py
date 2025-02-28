@@ -27,6 +27,9 @@ class hyperspectral_dataset(Dataset):
         # Leser labels
         HEIGHT, WIDTH = 598, 1092  # Juster om nødvendig
         self.labels = np.fromfile(label_path, dtype=np.uint8).reshape((HEIGHT, WIDTH))
+        # Endre labels fra {1, 2, 3} → {0, 1, 2}
+        self.labels = self.labels - 1
+
 
 
         # Sjekk om dimensjonene matcher

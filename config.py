@@ -35,6 +35,9 @@ from torchvision import transforms
 # HYPSO Package
 import hypso
 
+# Progress Bar
+from tqdm import tqdm
+
 # Logger
 warnings.filterwarnings("ignore")
 
