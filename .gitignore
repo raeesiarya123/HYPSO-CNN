@@ -1,3 +1,6 @@
 /raw_data/
 /training_data/
+/scraping/
+/__pycache__/
 *.png
+*.csv

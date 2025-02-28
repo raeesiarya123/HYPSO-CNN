@@ -7,6 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'm
 from config import *
 from dataset import hyperspectral_dataset
 from models.cnn_1d import cnn_1d
+from csv_management import read_csv_file
 
 #######################################################################################
 #######################################################################################
@@ -14,11 +15,8 @@ from models.cnn_1d import cnn_1d
 
 # GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Device: {device}\n")
-print(torch.cuda.is_available())  # Skal være True
-print(torch.cuda.device_count())  # Skal være minst 1
-print(torch.version.cuda)  # Skal matche CUDA 12.7
-print(torch.backends.cudnn.version())  # Skal gi et tall hvis CUDNN er aktiv
+
+# Optimalisering
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.fastest = True
 
@@ -28,13 +26,7 @@ BATCH_SIZE = 512
 LEARNING_RATE = 0.001
 
 # Last inn datasettet
-TRAIN_DATA_PATHS = ["raw_data/bluenile/bluenile_2025-01-25T08-23-16Z/bluenile_2025-01-25T08-23-16Z.bip@",
-                    "raw_data/aeronetgalata/aeronetgalata_2025-01-02T08-52-34Z/aeronetgalata_2025-01-02T08-52-34Z.bip@",
-                    "raw_data/gulfofcalifornia/gulfofcalifornia_2025-01-14T18-19-49Z/gulfofcalifornia_2025-01-14T18-19-49Z.bip@"]
-
-TRAIN_LABEL_PATHS = ["training_data/bluenile/bluenile_2025-01-25T08-23-16Z-l1a_products_dn_class.dat",
-                   "training_data/aeronetgalata/aeronetgalata_2025-01-02T08-52-34Z-l1a_products_dn_class.dat",
-                   "training_data/gulfofcalifornia/gulfofcalifornia_2025-01-14T18-19-49Z-l1a_products_dn_class.dat"]
+TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS = read_csv_file()
 
 train_datasets = [hyperspectral_dataset(data_path, label_path) for data_path, label_path in zip(TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS)]
 train_dataset = torch.utils.data.ConcatDataset(train_datasets)
