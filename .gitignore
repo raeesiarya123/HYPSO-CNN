@@ -5,3 +5,6 @@
 *.png
 *.csv
 /scripts/check_prediction.py
+/scripts/comparison_bip_to_dat.py
+/scripts/load_envi_file.py
+/scripts/read_bip.py

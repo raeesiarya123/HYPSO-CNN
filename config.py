@@ -15,6 +15,7 @@ import csv
 
 # Visualization
 import matplotlib.pyplot as plt
+from matplotlib import image as mpimg
 import seaborn as sns
 from PIL import Image
 

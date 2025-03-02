@@ -60,6 +60,12 @@ with torch.no_grad():
 # Reshape to (598, 1092)
 prediction_classes = prediction_classes.reshape((598, 1092))
 
-np.save("prediction_classes.npy", prediction_classes)
+# Save prediction
+file_path_split = RAW_DATA_PATH.split('/')
+save_dir = f"raw_data/{file_path_split[1]}/{file_path_split[2]}/"
+print(save_dir)
+os.makedirs(save_dir, exist_ok=True)
+
+np.save(f"{save_dir}PREDICTION_{file_path_split[2]}.npy", prediction_classes)
 print(f"Prediction saved to 'prediction_classes.npy'")
-print(f"Prediction shape: {prediction_classes.shape}")  # Skal være (598, 1092)
+print(f"Prediction shape: {prediction_classes.shape}")  # (598, 1092)
