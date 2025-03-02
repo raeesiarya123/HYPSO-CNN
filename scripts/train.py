@@ -21,9 +21,9 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.fastest = True
 
 # Hyperparametere
-EPOCHS = 75
-BATCH_SIZE = 512
-LEARNING_RATE = 0.001
+EPOCHS = 10
+BATCH_SIZE = 1024
+LEARNING_RATE = 0.005
 
 # Last inn datasettet
 TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS = read_csv_file()
@@ -38,8 +38,10 @@ model = torch.compile(model)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-def train_loop(model, train_loader, criterion, optimizer):
+def train_loop(model, train_loader, criterion, optimizer, save_path="models/best_model.pth"):
     model.train()
+    best_accuracy = 0.0
+
     for epoch in range(EPOCHS):
         total_loss = 0.0
         correct = 0
@@ -50,11 +52,13 @@ def train_loop(model, train_loader, criterion, optimizer):
         for batch in loop:
             inputs, labels = batch
             inputs, labels = inputs.to(device), labels.to(device)
-            inputs = inputs.unsqueeze(1).squeeze(2)
+
+            if inputs.dim() == 2:  
+                inputs = inputs.unsqueeze(-1)
 
             optimizer.zero_grad()
             output = model(inputs)
-            loss = criterion(output, labels)
+            loss = criterion(output, labels)  
             loss.backward()
             optimizer.step()
 
@@ -65,6 +69,13 @@ def train_loop(model, train_loader, criterion, optimizer):
         
         accuracy = 100 * correct / total
         print(f"Epoch {epoch+1}/{EPOCHS}, Loss: {total_loss:.4f}, Accuracy: {accuracy:.2f}%")
+
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            torch.save(model.state_dict(), save_path)
+            print(f"Model saved with accuracy: {best_accuracy:.2f}%")
+
+        print("\n")
 
 print("Starter trening...")
 train_loop(model, train_loader, criterion, optimizer)

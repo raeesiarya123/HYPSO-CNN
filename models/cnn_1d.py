@@ -20,7 +20,7 @@ class cnn_1d(nn.Module):
         # Lag 1
         # 1) Konvolusjonslag
         # 2) Batch normalisering
-        self.conv1 = nn.Conv1d(in_channels=1, out_channels=conv1_filters, kernel_size=7, stride=1, padding='same')
+        self.conv1 = nn.Conv1d(in_channels=120, out_channels=conv1_filters, kernel_size=7, stride=1, padding='same')
         self.bn1 = nn.BatchNorm1d(conv1_filters)
 
         # Antall nevroner: 598*32 = 19136
@@ -43,6 +43,7 @@ class cnn_1d(nn.Module):
 
         # Global Average Pooling (komprimerer data fra (batch, 128, 598) → (batch, 128, 1))
         # Forhindrer overtilpasning og reduserer antall parametere --> mindre overtrening, raskere trening
+        #self.global_avg_pool = nn.Identity() # nn.AdaptiveAvgPool1d(1)
         self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
         # Før GAP: (batch, 128, 598) --> 76554 verdier totalt
         # Etter GAP: (batch, 128, 1) --> 128 verdier totalt (1 per kanal)

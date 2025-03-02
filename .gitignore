@@ -4,3 +4,4 @@
 /__pycache__/
 *.png
 *.csv
+/scripts/check_prediction.py
