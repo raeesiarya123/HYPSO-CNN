@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import cupy as cp
 import csv
+import random as rd
 
 # Visualization
 import matplotlib.pyplot as plt
@@ -25,6 +26,7 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 # Deep Learning (PyTorch)
 import torch

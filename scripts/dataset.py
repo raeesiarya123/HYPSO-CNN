@@ -10,8 +10,11 @@ from config import *
 #######################################################################################
 
 class hyperspectral_dataset(Dataset):
-    def __init__(self, top_folder_name, label_path=None):
+    def __init__(self, top_folder_name, label_path=None, augment_factor=10, apply_augment=False):
         """ Leser inn hyperspektral .bip@-data og tilsvarende labels """
+
+        self.augment_factor = augment_factor
+        self.apply_augment = apply_augment
         
         # Leser inn hyperspektral data fra .bip@
         with open(top_folder_name, 'rb') as f:
@@ -48,10 +51,19 @@ class hyperspectral_dataset(Dataset):
 
     def __len__(self):
         """ Returnerer antall piksler i datasetet. """
-        return len(self.image_data)
+        return len(self.image_data) * (self.augment_factor + 1) if self.apply_augment else len(self.image_data)
 
     def __getitem__(self, idx):
         """ Henter én piksel og dens label. """
+
+        base_idx = idx % len(self.image_data)
+        pixel = self.image_data[base_idx]
+
+        if self.apply_augment and idx >= len(self.image_data):
+            noise_std = rd.uniform(0.01, 0.075)
+            noise = torch.normal(mean=0, std=noise_std, size=pixel.shape)
+            pixel = pixel + noise
+
         if self.labels is not None:
-            return self.image_data[idx], self.labels[idx]
-        return self.image_data[idx] # For inference
+            return pixel, self.labels[base_idx]
+        return pixel # For inference

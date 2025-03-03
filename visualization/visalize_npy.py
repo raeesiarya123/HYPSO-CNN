@@ -13,7 +13,8 @@ RAW_DATA_PATH = "raw_data/mariamadre/mariamadre_2025-02-10T18-06-07Z/mariamadre_
 PNG_PATH = "raw_data/mariamadre/mariamadre_2025-02-10T18-06-07Z/mariamadre_2025-02-10T18-06-07Z.png"
 file_path_split = RAW_DATA_PATH.split('/')
 
-prediction_classes = np.load(f"{file_path_split[2]}_prediction.npy")
+prediction_classes = np.load(f"raw_data/{file_path_split[1]}/{file_path_split[2]}/PREDICTION_{file_path_split[2]}.npy")
+#prediction_classes = np.load("raw_data/mariamadre/mariamadre_2025-02-10T18-06-07Z/PREDICTION_mariamadre_2025-02-10T18-06-07Z.npy")
 
 colors = {
     0: [0.5, 0, 0.5],  # Purple (Sea)

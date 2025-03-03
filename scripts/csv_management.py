@@ -18,7 +18,7 @@ def find_dat_and_bip_files():
 
     bip_files_paths = []
 
-    os.chdir("training_data")
+    os.chdir("labeled_data")
 
     for element in os.listdir():
         if os.path.isdir(element):
@@ -64,20 +64,23 @@ def create_csv_file():
         for i in range(len(dat_files_paths)):
             writer.writerow([dat_files_paths[i], bip_files_paths[i]])
 
-#create_csv_file()
+create_csv_file()
 
-def read_csv_file():
+def read_csv_file(csv_file_with_path):
     dat_files = []
     bip_files = []
 
-    with open('files.csv', mode='r') as file:
+    with open(f'{csv_file_with_path}', mode='r') as file:
         csvFile = csv.reader(file)
 
         i = 0
         for lines in csvFile:
             if i != 0:
-                dat_files.append(lines[0][1:])
-                bip_files.append(lines[1][1:])
+                dat_files.append(lines[0])
+                bip_files.append(lines[1])
             i += 1
     
     return bip_files, dat_files
+
+def read_csv_file_validation():
+    return

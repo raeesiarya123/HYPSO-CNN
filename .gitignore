@@ -1,5 +1,5 @@
 /raw_data/
-/training_data/
+/labeled_data/
 /scraping/
 /__pycache__/
 *.png

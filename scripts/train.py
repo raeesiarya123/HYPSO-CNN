@@ -21,14 +21,15 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.fastest = True
 
 # Hyperparametere
-EPOCHS = 10
+EPOCHS = 36
 BATCH_SIZE = 1024
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.001
+COUNTER_LR = 0
 
 # Last inn datasettet
-TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS = read_csv_file()
+TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS = read_csv_file("train_files.csv")
 
-train_datasets = [hyperspectral_dataset(data_path, label_path) for data_path, label_path in zip(TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS)]
+train_datasets = [hyperspectral_dataset(data_path, label_path, apply_augment=True) for data_path, label_path in zip(TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS)]
 train_dataset = torch.utils.data.ConcatDataset(train_datasets)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=3)
 
@@ -37,8 +38,9 @@ model = cnn_1d(input_dim=120, num_classes=3).to(device)
 model = torch.compile(model)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5 if COUNTER_LR < 3 else 1)
 
-def train_loop(model, train_loader, criterion, optimizer, save_path="models/best_model.pth"):
+def train_loop(model, train_loader, criterion, optimizer, save_path="models/best_model.pth", counter_lr=COUNTER_LR):
     model.train()
     best_accuracy = 0.0
 
@@ -67,6 +69,9 @@ def train_loop(model, train_loader, criterion, optimizer, save_path="models/best
             correct += (predicted == labels).sum().item()
             total += labels.size(0)
         
+        # Change LR
+        scheduler.step()
+
         accuracy = 100 * correct / total
         print(f"Epoch {epoch+1}/{EPOCHS}, Loss: {total_loss:.4f}, Accuracy: {accuracy:.2f}%")
 
