@@ -13,6 +13,22 @@ class hyperspectral_dataset(Dataset):
     def __init__(self, top_folder_name, label_path=None, augment_factor=10, apply_augment=False):
         self.augment_factor = augment_factor
         self.apply_augment = apply_augment
+
+        """
+        Initializes the hyperspectral dataset.
+
+        Parameters:
+        - top_folder_name (str): Path to the hyperspectral image file.
+        - label_path (str, optional): Path to the corresponding label file. If None, dataset is for inference.
+        - augment_factor (int): Number of augmentations to generate per image.
+        - apply_augment (bool): Whether to apply augmentations during training.
+
+        This function:
+        - Loads the hyperspectral image data and reshapes it into (height, width, bands).
+        - If labels are provided, loads and reshapes them accordingly.
+        - Creates base images and labels, including vertically and horizontally flipped versions.
+        - Converts images and labels into PyTorch tensors for model compatibility.
+        """
         
         # Read hyperspectral data
         with open(top_folder_name, 'rb') as f:
