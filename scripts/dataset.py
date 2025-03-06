@@ -106,13 +106,13 @@ class hyperspectral_dataset(Dataset):
 
             if aug_idx > 0:
                 # Gaussian Noise
-                if rd.random() < 0.1:
+                if rd.uniform(0, 1) < 0.1:
                     noise_std = rd.uniform(0.01, 0.03)
                     noise = torch.normal(mean=0, std=noise_std, size=pixel.shape)
                     pixel = pixel + noise
 
                 # Spectral Scaling
-                elif rd.random() < 0.1:
+                elif rd.uniform(0, 1) < 0.1:
                     scale_factor_std = rd.uniform(0.01, 0.03)
                     scale_factor = torch.normal(mean=1, std=scale_factor_std, size=pixel.shape)
                     pixel = pixel * scale_factor
