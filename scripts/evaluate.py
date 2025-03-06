@@ -12,6 +12,25 @@ from csv_management import read_csv_file
 #######################################################################################
 #######################################################################################
 
+"""
+evaluate.py - Model evaluation script for the 1D CNN on hyperspectral images.
+
+This script loads a trained CNN model and evaluates its performance on a test dataset. 
+It computes the model's accuracy, generates a confusion matrix, and prints a classification report.
+
+Main steps:
+- Configures the device (GPU or CPU).
+- Loads the test dataset from CSV file paths.
+- Initializes and loads the trained model.
+- Performs inference on the test set.
+- Computes accuracy, confusion matrix, and classification report.
+
+Key Features:
+- Uses CUDA if available for faster inference.
+- Handles `_orig_mod.` prefix in model state_dict to avoid loading errors.
+- Uses batch processing for efficient evaluation.
+"""
+
 # GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")

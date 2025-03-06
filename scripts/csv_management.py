@@ -9,14 +9,21 @@ from config import *
 #######################################################################################
 #######################################################################################
 
-def find_dat_and_bip_files():    
-    dat_files_names = []
+def find_dat_and_bip_files():
+    """
+    Searches for .dat files in the "labeled_data" directory and corresponding .bip@ files 
+    in the "raw_data" directory. 
+
+    Returns:
+    - dat_files_paths (list): List of relative paths to .dat files.
+    - bip_files_paths (list): List of relative paths to corresponding .bip@ files.
+    """
+
     dat_files_paths = []
+    bip_files_paths = []
 
     bip_dir1 = []
     bip_dir2 = []
-
-    bip_files_paths = []
 
     os.chdir("labeled_data")
 
@@ -56,6 +63,13 @@ def find_dat_and_bip_files():
 
 
 def create_csv_file():
+    """
+    Creates a CSV file ('files.csv') that maps .dat files to their corresponding .bip@ files.
+
+    - Calls find_dat_and_bip_files() to retrieve paths.
+    - Writes the file paths into 'files.csv' with headers: ["dat_files", "bip_files"].
+    """
+
     dat_files_paths, bip_files_paths = find_dat_and_bip_files()
 
     with open('files.csv', mode='w') as file:
@@ -64,9 +78,20 @@ def create_csv_file():
         for i in range(len(dat_files_paths)):
             writer.writerow([dat_files_paths[i], bip_files_paths[i]])
 
-create_csv_file()
+#create_csv_file()
 
 def read_csv_file(csv_file_with_path):
+    """
+    Reads a CSV file containing .dat and .bip@ file paths.
+
+    Parameters:
+    - csv_file_with_path (str): Path to the CSV file.
+
+    Returns:
+    - bip_files (list): List of .bip@ file paths.
+    - dat_files (list): List of .dat file paths.
+    """
+    
     dat_files = []
     bip_files = []
 
@@ -81,6 +106,3 @@ def read_csv_file(csv_file_with_path):
             i += 1
     
     return bip_files, dat_files
-
-def read_csv_file_validation():
-    return

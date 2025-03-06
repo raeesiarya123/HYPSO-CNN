@@ -12,6 +12,38 @@ from dataset import hyperspectral_dataset
 #######################################################################################
 #######################################################################################
 
+"""
+infer.py - Hyperspectral Image Classification Inference Script
+
+This script performs pixel-wise classification on a raw hyperspectral image using a pre-trained 
+1D CNN model. It loads the trained model, processes the input image, runs inference on each pixel, 
+and saves the predicted classification as a NumPy array.
+
+Main Steps:
+1. **Setup and Model Loading**:
+   - Loads the trained CNN model (`best_model.pth`) and prepares it for inference.
+   - Uses CUDA (GPU) if available, otherwise defaults to CPU.
+   - Fixes potential `_orig_mod.` prefix issues when loading model state.
+
+2. **Data Processing**:
+   - Reads a raw `.bip` hyperspectral image from the specified path.
+   - Converts the image into a PyTorch tensor and reshapes it to match the model's input format.
+
+3. **Inference (Pixel-Wise Classification)**:
+   - Iterates through each pixel in the image and passes it through the model.
+   - Predicts one of three classes: **Land, Sea, or Cloud**.
+   - Stores predictions in a NumPy array.
+
+4. **Saving Predictions**:
+   - Reshapes the predictions into a 2D image of shape `(598, 1092)`.
+   - Saves the output as a `.npy` file in the appropriate directory.
+
+Key Features:
+- Utilizes `torch.no_grad()` for efficient inference.
+- Prints progress using `tqdm` for tracking prediction status.
+- Automatically creates directories for saving predictions.
+"""
+
 # GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -45,7 +77,7 @@ except Exception as e:
 
 # Run prediction (inference)
 with torch.no_grad():
-    num_pixels = image_data.shape[-1]  # Hvor mange piksler vi har
+    num_pixels = image_data.shape[-1]
 
     print(num_pixels)
 
