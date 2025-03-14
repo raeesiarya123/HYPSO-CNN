@@ -45,10 +45,10 @@ test_dataset = torch.utils.data.ConcatDataset(test_datasets)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1024, shuffle=False, pin_memory=True, num_workers=3)
 
 # Load model
-model = cnn_1d(input_dim=120, num_classes=3).to(device)
-state_dict = torch.load(MODEL_PATH, map_location=device)
-new_state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}  # Fix `_orig_mod.`-prefix
-model.load_state_dict(new_state_dict)
+model = cnn_1d(input_dim=598, num_classes=3).to(device)
+checkpoint = torch.load(MODEL_PATH, map_location=device)
+state_dict = checkpoint['model_state_dict']
+model.load_state_dict(state_dict)
 model.to(device)
 model.eval()
 
@@ -60,7 +60,7 @@ def evaluate(model, test_loader):
 
     with torch.no_grad():
         for inputs, labels in tqdm(test_loader, desc="Evaluating"):
-            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = inputs.to(device, non_blocking=True), labels.to(device, non_blocking=True)
 
             if inputs.dim() == 2:
                 inputs = inputs.unsqueeze(-1)
@@ -68,25 +68,28 @@ def evaluate(model, test_loader):
             output = model(inputs)
             _, preds = torch.max(output, 1)
 
-            all_preds.extend(preds.cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
+            all_preds.extend(preds.cpu().detach().numpy())
+            all_labels.extend(labels.cpu().numpy().flatten())
         
     accuracy = accuracy_score(all_labels, all_preds)
     print(f"Accuracy: {accuracy*100:.2f}%")
 
     return all_preds, all_labels
 
-labels, preds = evaluate(model, test_loader)
+preds, labels = evaluate(model, test_loader)
 
 conf_matrix = confusion_matrix(labels, preds)
-class_names = ["Land", "Sea", "Cloud"]
+class_names = ["Sea", "Land", "Cloud"]
+
+# Opprett mappe hvis den ikke finnes
+os.makedirs("plots/validation_plots", exist_ok=True)
 
 plt.figure(figsize=(8, 8))
 sns.heatmap(conf_matrix, annot=True, fmt="d", xticklabels=class_names, yticklabels=class_names)
 plt.xlabel("Predicted")
 plt.ylabel("Actual")
 plt.title("Confusion Matrix")
-plt.savefig("confusion_matrix.png")
+plt.savefig("plots/validation_plots/confusion_matrix.png")
 plt.show()
 
 print(classification_report(labels, preds, target_names=class_names))
