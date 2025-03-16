@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'm
 from config import *
 from models.cnn_1d import cnn_1d
 from scripts.dataset import hyperspectral_dataset
-from scripts.csv_management import read_csv_file
+from scripts.data_management import read_csv_file
 
 #######################################################################################
 #######################################################################################

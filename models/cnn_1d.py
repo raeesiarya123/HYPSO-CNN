@@ -8,27 +8,13 @@ from config import *
 #######################################################################################
 #######################################################################################
 #######################################################################################
-"""
-Initializes the CNN model with six convolutional layers, batch normalization, 
-global average pooling, dropout, and a fully connected output layer.
-
-Parameters:
-- input_dim (int): The input feature dimension (default: 598).
-- num_classes (int): Number of output classes (default: 3 for land, sea and cloud classification).
-
-The model consists of:
-- Six 1D convolutional layers, each followed by batch normalization.
-- Global average pooling to reduce dimensionality and prevent overfitting.
-- Dropout to improve generalization.
-- A fully connected layer for final classification.
-"""
 
 class cnn_1d(nn.Module):
     def __init__(self, input_dim=110, num_classes=3,
-                conv1_filters=64,
-                conv2_filters=128,
-                conv3_filters=256,
-                conv4_filters=512,
+                conv1_filters=8,
+                conv2_filters=16,
+                conv3_filters=32,
+                conv4_filters=64,
                 ):
         super(cnn_1d, self).__init__()
         torch.backends.cudnn.benchmark = True
@@ -37,28 +23,28 @@ class cnn_1d(nn.Module):
         # 1) Convolution
         # 2) Batch normalization
         self.conv1 = nn.Conv1d(in_channels=1, out_channels=conv1_filters, kernel_size=7, stride=1, padding="same")
-        self.bn1 = nn.BatchNorm1d(conv1_filters)
+        #self.bn1 = nn.BatchNorm1d(conv1_filters)
         self.mp1 = nn.MaxPool1d(kernel_size=2)
 
         # Layer 2
         # 1) Convolution
         # 2) Batch normalization
         self.conv2 = nn.Conv1d(in_channels=conv1_filters, out_channels=conv2_filters, kernel_size=5, stride=1, padding="same")
-        self.bn2 = nn.BatchNorm1d(conv2_filters)
+        #self.bn2 = nn.BatchNorm1d(conv2_filters)
         self.mp2 = nn.MaxPool1d(kernel_size=2)
 
         # Layer 3
         # 1) Convolution
         # 2) Batch normalization
         self.conv3 = nn.Conv1d(in_channels=conv2_filters, out_channels=conv3_filters, kernel_size=3, stride=1, padding="same")
-        self.bn3 = nn.BatchNorm1d(conv3_filters)
+        #self.bn3 = nn.BatchNorm1d(conv3_filters)
         self.mp3 = nn.MaxPool1d(kernel_size=2)
 
         # Layer 4
         # 1) Convolution
         # 2) Batch normalization
         self.conv4 = nn.Conv1d(in_channels=conv3_filters, out_channels=conv4_filters, kernel_size=3, stride=1, padding="same")
-        self.bn4 = nn.BatchNorm1d(conv4_filters)
+        #self.bn4 = nn.BatchNorm1d(conv4_filters)
         self.mp4 = nn.MaxPool1d(kernel_size=2)
 
         # Global Average Pooling (compresses data from (batch, 128, 598) → (batch, 128, 1))
@@ -77,7 +63,7 @@ class cnn_1d(nn.Module):
 
         # Layer 1
         x = self.conv1(x)
-        x = self.bn1(x)
+        #x = self.bn1(x)
         x = F.leaky_relu(x)
         x = self.mp1(x)
 
@@ -85,21 +71,21 @@ class cnn_1d(nn.Module):
 
         # Layer 2
         x = self.conv2(x)
-        x = self.bn2(x)
+        #x = self.bn2(x)
         x = F.leaky_relu(x)
         x = self.mp2(x)
         #print(f"DEBUG - After Conv2: {x.shape}")  
 
         # Layer 3
         x = self.conv3(x)
-        x = self.bn3(x)
+        #x = self.bn3(x)
         x = F.leaky_relu(x)
         x = self.mp3(x)
         #print(f"DEBUG - After Conv3: {x.shape}") 
 
         # Layer 4
         x = self.conv4(x)
-        x = self.bn4(x)
+        #x = self.bn4(x)
         x = F.leaky_relu(x)
         x = self.mp4(x)
         #print(f"DEBUG - After Conv4: {x.shape}") 
@@ -124,72 +110,53 @@ class cnn_1d(nn.Module):
         #print("-"*100)
 
         return x
-
+    
+#######################################################################################
 
 """
-class cnn_1d(nn.Module):
-    def __init__(self, input_dim=598, num_classes=3):
-        super(cnn_1d, self).__init__()
-        torch.backends.cudnn.benchmark = True
 
-        # Activation function (LeakyReLU with negative_slope=0.01)
-        self.leaky_relu = nn.LeakyReLU(negative_slope=0.01)
+class HyperspectralCNN(nn.Module):
+    def __init__(self, input_dim=110, num_classes=3, kernel_size=6, start_filters=6):
+        super(HyperspectralCNN, self).__init__()
 
-        # 1D Convolutional Layers
-        self.conv1 = nn.Conv1d(in_channels=120, out_channels=32, kernel_size=3, stride=1, padding='same')
-        self.bn1 = nn.BatchNorm1d(32)
-        self.pool1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # Layer 1
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=start_filters, kernel_size=kernel_size, padding="same")
+        self.mp1 = nn.MaxPool1d(kernel_size=2)
 
-        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding='same')
-        self.bn2 = nn.BatchNorm1d(64)
-        self.pool2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # Layer 2
+        self.conv2 = nn.Conv1d(in_channels=start_filters, out_channels=start_filters*2, kernel_size=kernel_size, padding="same")
+        self.mp2 = nn.MaxPool1d(kernel_size=2)
 
-        self.conv3 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding='same')
-        self.bn3 = nn.BatchNorm1d(128)
+        # Layer 3
+        self.conv3 = nn.Conv1d(in_channels=start_filters*2, out_channels=start_filters*3, kernel_size=kernel_size, padding="same")
+        self.mp3 = nn.MaxPool1d(kernel_size=2)
 
-        self.conv4 = nn.Conv1d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding='same')
-        self.bn4 = nn.BatchNorm1d(256)
-        self.pool3 = nn.MaxPool1d(kernel_size=2, stride=2)
-
-        self.conv5 = nn.Conv1d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding='same')
-        self.bn5 = nn.BatchNorm1d(512)
-
-        self.conv6 = nn.Conv1d(in_channels=512, out_channels=1024, kernel_size=3, stride=1, padding='same')
-        self.bn6 = nn.BatchNorm1d(1024)
-
-        # Global Average Pooling
-        self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
-
-        # Dropout
-        self.dropout = nn.Dropout(p=0.3)
+        # Layer 4
+        self.conv4 = nn.Conv1d(in_channels=start_filters*3, out_channels=start_filters*4, kernel_size=kernel_size, padding="same")
+        self.mp4 = nn.MaxPool1d(kernel_size=2)
 
         # Fully Connected Layer
-        self.fc = nn.Linear(1024, num_classes)
+        self.global_avg_pool = nn.AdaptiveAvgPool1d(1)  # Global Average Pooling
+        self.fc = nn.Linear(start_filters*4, num_classes)  # Final classification layer
 
     def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = self.mp1(x)
 
-        x = self.leaky_relu(self.bn1(self.conv1(x)))
-        if x.shape[-1] > 1:
-            x = self.pool1(x)
+        x = F.relu(self.conv2(x))
+        x = self.mp2(x)
 
-        x = self.leaky_relu(self.bn2(self.conv2(x)))
-        if x.shape[-1] > 1:
-            x = self.pool2(x)
+        x = F.relu(self.conv3(x))
+        x = self.mp3(x)
 
-        x = self.leaky_relu(self.bn3(self.conv3(x)))
+        x = F.relu(self.conv4(x))
+        x = self.mp4(x)
 
-        x = self.leaky_relu(self.bn4(self.conv4(x)))
-        if x.shape[-1] > 1:
-            x = self.pool3(x)
+        x = self.global_avg_pool(x)  # Reduce to (batch, channels, 1)
+        x = x.view(x.shape[0], -1)  # Flatten to (batch, channels)
 
-        x = self.leaky_relu(self.bn5(self.conv5(x)))
-
-        x = self.leaky_relu(self.bn6(self.conv6(x)))
-
-        x = self.global_avg_pool(x).squeeze(-1)
-
-        x = self.dropout(x)
-        x = self.fc(x)
-
-        return F.log_softmax(x, dim=1)
+        x = self.fc(x)  # Fully connected layer for classification
+        return x
 """
+
+#######################################################################################

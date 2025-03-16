@@ -4,6 +4,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from config import *
+from data_management import read_csv_file
 
 #######################################################################################
 #######################################################################################
@@ -61,3 +62,27 @@ def normalize_spectrum(spectrum):
     range_vals[range_vals == 0] = 1e-8
 
     return (spectrum - min_vals) / range_vals
+
+#######################################################################################
+
+# Get class weights
+def get_weights_training():
+    _, train_dataset,_ = read_csv_file("train_files.csv")
+
+    count_cloud = 0
+    count_land = 0
+    count_sea = 0
+
+    for dat_file in train_dataset:
+        with open(dat_file, 'r+b') as f:
+            data = np.fromfile(f, dtype=np.uint8)
+        count_cloud += np.count_nonzero(data == 1)
+        count_land += np.count_nonzero(data == 2)
+        count_sea += np.count_nonzero(data == 3)
+
+    class_counts = [count_cloud, count_land, count_sea]
+
+    class_weights = [sum(class_counts) / (3 * count) for count in class_counts]
+    class_weights = torch.tensor(class_weights)
+    
+    return class_weights

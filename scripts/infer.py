@@ -53,7 +53,7 @@ MODEL_PATH = "models/best_model.pth"
 RAW_DATA_PATH = "raw_data/mariamadre/mariamadre_2025-02-10T18-06-07Z/mariamadre_2025-02-10T18-06-07Z.bip"
 
 # Load the model
-model = cnn_1d(input_dim=120, num_classes=3)
+model = cnn_1d(input_dim=110, num_classes=3)
 state_dict = torch.load(MODEL_PATH, map_location=device)
 new_state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()} # Fix `_orig_mod.`-prefix
 model.load_state_dict(new_state_dict)

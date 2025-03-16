@@ -11,7 +11,7 @@ from preprocessing import *
 #######################################################################################
 
 class hyperspectral_dataset(Dataset):
-    def __init__(self, top_folder_name, label_path=None, augment_factor=0,
+    def __init__(self, top_folder_name, label_path=None, augment_factor=3,
                   apply_augment=False):
         self.augment_factor = augment_factor
         self.apply_augment = apply_augment
@@ -56,34 +56,20 @@ class hyperspectral_dataset(Dataset):
             for i in range(len(self.labels)):
                 length_index_labels += 1
 
-            #print(f"DEBUG - Labels after shift, unique values: {np.unique(self.labels)}")
-
             # Create base version of image and labels - add flipped versions later
             self.base_images = [self.image_data]
             self.base_labels = [self.labels]
-            
-            #print(f"DEBUG - Base labels shape: {self.base_labels[0].shape}")
-            
-            if apply_augment:
-                # Vertical Flip
-                flip_v_image = np.flip(self.image_data, axis=0)
-                flip_v_labels = np.flip(self.labels, axis=0)
-                self.base_images.append(flip_v_image)
-                self.base_labels.append(flip_v_labels)
-                    
-                # Horizontal Flip
-                flip_h_image = np.flip(self.image_data, axis=1)
-                flip_h_labels = np.flip(self.labels, axis=1)
-                self.base_images.append(flip_h_image)
-                self.base_labels.append(flip_h_labels)
 
             # Flatten image data
-            self.base_images = [img.reshape(-1, img.shape[-1]) for img in self.base_images]
-            self.base_labels = [lbl.flatten() for lbl in self.base_labels]
+            self.image_data = self.image_data.reshape(-1, self.image_data.shape[-1])
+            self.labels = self.labels.flatten()
+
+            #self.base_images = [img.reshape(-1, img.shape[-1]) for img in self.base_images]
+            #self.base_labels = [lbl.flatten() for lbl in self.base_labels]
 
             # Convert to PyTorch tensors
-            self.base_images = [torch.from_numpy(img).float().contiguous() for img in self.base_images]
-            self.base_labels = [torch.from_numpy(lbl).long() for lbl in self.base_labels]
+            self.image_data = torch.from_numpy(self.image_data).float().contiguous()
+            self.labels = torch.from_numpy(self.labels).long()
 
         else:
             self.labels = None
@@ -96,61 +82,75 @@ class hyperspectral_dataset(Dataset):
         3 * (1 original + augment_factor augmentations).
         For instance if augment_factor=10, the total number of images is 3 * 11 = 33 from one image.
         """
-        base_size = len(self.base_images[0])
+        base_size = self.image_data.shape[0]
+        logging.debug(f"\033[94mBase size: {base_size}\033[0m")
         #print(f"DEBUG - Dataset size: {self.image_data.shape}")
         if self.apply_augment:
-            return base_size * (self.augment_factor + 1) * len(self.base_images)
-        return base_size * len(self.base_images)
+            return base_size * (self.augment_factor + 1)
+        return base_size
 
     def __getitem__(self, idx):
         """
         Returns one pixel and its corresponding label.
         The augmentations are applied probabilistically.
-        The augmentations only happen after the original image and its flips.
+        The augmentations only happen after the original image.
         """
-        base_size = len(self.base_images[0])
-        base_idx = idx % len(self.base_images[0])
-        image_idx = (idx // len(self.base_images[0])) % len(self.base_images)
-        pixel = self.base_images[image_idx][base_idx]
+        #print(f"DEBUG: __getitem__() called with idx={idx}")
+        base_size = self.image_data.shape[0]
+        #print(base_size, idx)
+        #print(idx // base_size)
+
+        idx_original = idx
+
+        if self.apply_augment:
+            idx = idx % base_size
+            aug_idx = idx_original // base_size
+
+        pixel = self.image_data[idx]
 
         # Remove bands
         pixel = cut_wavelengths(pixel)
+        mean_value = torch.mean(pixel).item()
+        #print(mean_value)
 
         #print(f"DEBUG - Pixel shape: {pixel.shape}, Pixel value: {pixel}")
 
-        if self.apply_augment and idx >= len(self.base_images[0])*len(self.base_images):
+        #print(self.apply_augment, aug_idx)
+
+        if self.apply_augment and aug_idx > 0:
             # Augmentation index - 0: original, 1 to augment_factor: augmentations
-            aug_idx = (idx // base_size) % (self.augment_factor + 1)
+            #aug_idx = (idx // base_size) % (self.augment_factor + 1)
 
-            if aug_idx > 0:
-                # Gaussian Noise
-                if rd.uniform(0, 1) < 0.1:
-                    noise_std = rd.uniform(0.01, 0.03)
-                    noise = torch.normal(mean=0, std=noise_std, size=pixel.shape)
-                    pixel = pixel + noise
+            # Gaussian Noise
+            if rd.uniform(0, 1) < 0.5:
+                noise_std = rd.uniform(0.01*mean_value, 0.03*mean_value)
+                noise = torch.normal(mean=0, std=noise_std, size=pixel.shape)
+                pixel = pixel + noise
+                #logging.debug("\033[92mApplied Gaussian Noise\033[0m")
 
-                # Spectral Scaling
-                elif rd.uniform(0, 1) < 0.1:
-                    scale_factor_std = rd.uniform(0.01, 0.03)
-                    scale_factor = torch.normal(mean=1, std=scale_factor_std, size=pixel.shape)
-                    pixel = pixel * scale_factor
+            # Spectral Scaling
+            if rd.uniform(0, 1) < 0.5:
+                scale_factor_std = rd.uniform(0.01*mean_value, 0.03*mean_value)
+                scale_factor = torch.normal(mean=1, std=scale_factor_std, size=pixel.shape)
+                pixel = pixel * scale_factor
+                #logging.debug("\033[92mApplied Spectral Scaling\033[0m")
 
         if self.labels is not None:
-            label = self.base_labels[image_idx][base_idx].unsqueeze(0)
+            label = self.labels[idx].unsqueeze(0)
             return pixel, label
         return pixel # For inference
 
 
+"""
 # Angi stier til data
 data_path = "raw_data/bluenile/bluenile_2025-01-25T08-23-16Z/bluenile_2025-01-25T08-23-16Z.bip@"
-label_path = "labeled_data/bluenile/bluenile_2025-01-25T08-23-16Z-l1a_products_dn_class_fixed.dat"
+label_path = "labeled_data/bluenile/bluenile_2025-01-25T08-23-16Z-l1a_products_dn_class_CORRECTED.dat"
 
-"""
 # Opprett dataset
 dataset = hyperspectral_dataset(top_folder_name=data_path, label_path=label_path, apply_augment=False)
 
 # Opprett DataLoader for raskere behandling
-dataloader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=4, pin_memory=True)
+dataloader = DataLoader(dataset, batch_size=273, shuffle=True, num_workers=4, pin_memory=True)
 
 # Test at alt fungerer
 for i, (pixels, labels) in enumerate(dataloader):

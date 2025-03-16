@@ -63,7 +63,14 @@ from hypso.load import load_l1d_nc_cube # Reflectance
 # Progress Bar
 from tqdm import tqdm
 
+# Cache
+sys.dont_write_bytecode = True
+torch.cuda.empty_cache()
+
 # Logger
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('matplotlib').setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
 
 print("Libraries are loaded!")

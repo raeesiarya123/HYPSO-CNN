@@ -7,31 +7,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'm
 from config import *
 from dataset import hyperspectral_dataset
 from models.cnn_1d import cnn_1d
-from csv_management import read_csv_file
+#from models.cnn_1d import HyperspectralCNN
+from scripts.data_management import read_csv_file
 from scripts.functions_train import *
 
 #######################################################################################
 #######################################################################################
 #######################################################################################
-
-"""
-train.py - Training script for the 1D CNN model on hyperspectral images.
-
-This script sets up and executes the training process, including:
-- Configuring the device (GPU or CPU) for training.
-- Loading the training dataset from CSV file paths.
-- Initializing and compiling the 1D CNN model.
-- Defining the loss function (CrossEntropy with label smoothing).
-- Using the AdamW optimizer with a ReduceLROnPlateau scheduler for learning rate adjustment.
-- Implementing the training loop with loss calculation, backpropagation, and model saving.
-
-Key Features:
-- Uses CUDA if available for faster training.
-- Applies data augmentation during dataset loading.
-- Utilizes PyTorch's `torch.compile` for performance optimization.
-- Saves the best-performing model based on accuracy.
-"""
-
 
 # GPU (CUDA) or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -43,7 +25,7 @@ torch.backends.cudnn.fastest = True
 
 # Parameters
 EPOCHS = 30
-BATCH_SIZE = 1092
+BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 COUNTER_LR = 0
 LABEL_SMOOTHING = 0.1
@@ -51,7 +33,7 @@ LABEL_SMOOTHING = 0.1
 print(f"Epochs: {EPOCHS}, Batch size: {BATCH_SIZE}, Learning rate: {LEARNING_RATE}, Label smoothing: {LABEL_SMOOTHING}")
 
 # Dataset
-TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS = read_csv_file("train_files.csv")
+TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS, TRAIN_PNG_PATHS = read_csv_file("train_files.csv")
 
 train_datasets = [hyperspectral_dataset(data_path, label_path, apply_augment=False) for data_path, label_path in zip(TRAIN_DATA_PATHS, TRAIN_LABEL_PATHS)]
 train_dataset = torch.utils.data.ConcatDataset(train_datasets)
@@ -72,24 +54,28 @@ train_loader = DataLoader(train_dataset,
                           batch_size=BATCH_SIZE, 
                           shuffle=True, 
                           pin_memory=True, 
-                          num_workers=1,
-                          persistent_workers=False,
-                          prefetch_factor=4
+                          num_workers=8,
+                          persistent_workers=False
                           )
 
 print(f"Amount of images in dataset: {len(train_dataset)/(598*1092)}")
 
 # Model
-model = cnn_1d(input_dim=120, num_classes=3).to(device)
+model = cnn_1d(input_dim=110, num_classes=3).to(device)
+# Tell antall parametere i modellen
+total_params = sum(p.numel() for p in model.parameters())
+print(f"Total number of parameters: {total_params}")
 
 # Get best accuracy from earlier trained model
 best_accuracy = get_earlier_model(device, model)
 
+class_weights = get_weights_training().to(device)
+#criterion = nn.CrossEntropyLoss(weight=class_weights,label_smoothing=LABEL_SMOOTHING)
 criterion = nn.CrossEntropyLoss(label_smoothing=LABEL_SMOOTHING)
 #criterion = FocalLoss(alpha=0.25, gamma=2)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3, verbose=True)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5, verbose=True)
 
 def train_loop(model, train_loader, criterion, optimizer, save_path="models/best_model.pth", counter_lr=COUNTER_LR):
     model.train()
@@ -105,7 +91,7 @@ def train_loop(model, train_loader, criterion, optimizer, save_path="models/best
         labels_per_epoch = []
         predictions_per_epoch = []
 
-        loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}", leave=False)
+        loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}", leave=False, colour="red")
 
         for batch in loop:
             inputs, labels = batch
@@ -143,20 +129,19 @@ def train_loop(model, train_loader, criterion, optimizer, save_path="models/best
         accuracy = 100 * correct / total
         print(f"Epoch {epoch+1}/{EPOCHS}, Loss: {total_loss:.4f}, Accuracy: {accuracy:.2f}%")
 
+        save_path_epoch = f"{save_path[:-4]}_EPOCH_{epoch+1}.pth"
+
         if accuracy > best_accuracy:
             best_accuracy = accuracy
-            #torch.save({'model_state_dict': model.state_dict(),
-            #            'best_accuracy': best_accuracy},
-            #            save_path)
+            torch.save({'model_state_dict': model.state_dict(),
+                        'best_accuracy': best_accuracy},
+                        save_path_epoch)
             print(f"Model saved with accuracy: {best_accuracy:.2f}%")
 
         scheduler.step(accuracy)
         
-        epoch_num += 1
         predictions_per_epoch = torch.cat(predictions_per_epoch).detach().cpu().numpy()
         labels_per_epoch = torch.cat(labels_per_epoch).detach().cpu().numpy()
-        plot_pixel_spectral_accuracy(predictions_per_epoch, labels_per_epoch, epoch_num)
-
         print("\n")
 
 print("Starting training...")
